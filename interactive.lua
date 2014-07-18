@@ -33,7 +33,7 @@ local function api_call(method, params)
   local chunks = {}
 
   local r, c, h = http.request{
-    url = ('http://%s:%s@%s:%s/'):format(vault.devcoin.user, vault.devcoin.password, vault.devcoin.server, vault.devcoin.port),
+    url = ('%s://%s:%s@%s:%s/'):format(vault.devcoin.protocol and 'https' or 'http', vault.devcoin.user, vault.devcoin.password, vault.devcoin.server, vault.devcoin.port),
     method = 'POST',
     headers = { ['content-type'] = 'application/json', ['content-length'] = jsonRequest:len() },
     source = ltn12.source.string(jsonRequest),

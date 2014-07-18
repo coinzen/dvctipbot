@@ -20,6 +20,7 @@ local m = {
   },
   devcoin = {
     server = 'node hostname or IP',
+    use_ssl = true,
     user = 'rpc user',
     password = 'rpc pass',
     port = '8332', -- The default devcoind json-rpc port is 62332, but 8332 might work
