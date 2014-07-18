@@ -104,6 +104,7 @@ function proccess(command, raw_params)
               amount = amount,
               donor = irc_user.nick,
             }
+            irc:sendChat(irc_user.nick, ('Sending %s DVC to %s'):format(amount, nick))
             irc:sendChat(nick, ('You got %s DVC from %s. Your claim token is: %s'):format(amount, irc_user.nick, token))
             irc:sendChat(nick, 'usage: CLAIM <claim token> <tip address>')
           else
