@@ -22,7 +22,7 @@ local m = {
     server = 'node hostname or IP',
     user = 'rpc user',
     password = 'rpc pass',
-    port = '8332', -- default devcoind json-rpc port
+    port = '8332', -- The default devcoind json-rpc port is 62332, but 8332 might work
   },
 
   -- Users granted to send tips
