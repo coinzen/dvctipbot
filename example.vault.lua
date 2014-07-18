@@ -18,6 +18,12 @@ local m = {
     '#devcoin',
     '#ophal',
   },
+  devcoin = {
+    server = 'node hostname or IP',
+    user = 'rpc user',
+    password = 'rpc pass',
+    port = '8332', -- default devcoind json-rpc port
+  },
 
   -- Users granted to send tips
   user = {
