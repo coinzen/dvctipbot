@@ -5,6 +5,8 @@ local uuid = require 'uuid'
 local empty = seawolf.variable.empty
 local explode = seawolf.text.explode
 local print_r = seawolf.variable.print_r -- Debug helper
+local http, ltn12 = require 'socket.http', require 'ltn12'
+local tconcat, json = table.concat, require 'dkjson'
 
 local irc_user = _G.user
 local channel = _G.channel
@@ -19,6 +21,28 @@ if _G.tokens == nil then
   }
 end
 local tokens = _G.tokens
+
+
+local function api_call(method, params)
+  local request = {
+    id = 'httpRequest',
+    method = method,
+    params = params or {},
+  }
+  local jsonRequest = json.encode(request)
+  local chunks = {}
+
+  local r, c, h = http.request{
+    url = ('http://%s:%s@%s:%s/'):format(vault.devcoin.user, vault.devcoin.password, vault.devcoin.server, vault.devcoin.port),
+    method = 'POST',
+    headers = { ['content-type'] = 'application/json', ['content-length'] = jsonRequest:len() },
+    source = ltn12.source.string(jsonRequest),
+    sink = ltn12.sink.table(chunks),
+  }
+
+  local response = tconcat(chunks)
+  return ({json.decode(response)})[1]
+end
 
 local from
 if channel:sub(1, 1) == '#' then
@@ -98,9 +122,14 @@ function proccess(command, raw_params)
               irc:sendChat(irc_user.nick, 'error: Invalid tip address!')
               process 'CLAIM'
             else
-              tokens.claim[token] = nil
-              irc:sendChat(claim.donor, ('Your tip was delivered to %s'):format(claim.nick))
-              irc:sendChat(claim.nick, ('Sent %s DVC to %s'):format(claim.amount, tip_address))
+              local rs = api_call('sendtoaddress', {tip_address, claim.amount})
+              if rs.code then
+                irc:sendChat(claim.nick, "error: Can't deliver tip! please try again later.")
+              else
+                tokens.claim[token] = nil
+                irc:sendChat(claim.donor, ('Your tip was delivered to %s. Transaction ID: %s'):format(claim.nick, rs.result))
+                irc:sendChat(claim.nick, ('Sent %s DVC to %s'):format(claim.amount, tip_address))
+              end
             end
           else
             irc:sendChat(irc_user.nick, 'error: Invalid claim token!')
