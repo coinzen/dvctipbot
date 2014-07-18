@@ -96,7 +96,7 @@ function proccess(command, raw_params)
         irc:sendChat(irc_user.nick, 'usage: TIP <auth token> <nick> [<amount>]')
       else
         local _ = (function(auth_token, nick, channel, amount)
-          amount = amount or 4
+          amount = amount or 40
           if auth_token == tokens.auth[irc_user.nick] then
             local token = uuid.new()
             tokens.claim[token] = {
