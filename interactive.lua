@@ -4,6 +4,7 @@ local seawolf = require 'seawolf'.__build('variable', 'text')
 local uuid = require 'uuid'
 local empty = seawolf.variable.empty
 local explode = seawolf.text.explode
+local is_numeric = seawolf.variable.is_numeric
 local print_r = seawolf.variable.print_r -- Debug helper
 local http, ltn12 = require 'socket.http', require 'ltn12'
 local tconcat, json = table.concat, require 'dkjson'
@@ -45,7 +46,7 @@ local function api_call(method, params)
 end
 
 local from
-if channel:sub(1, 1) == '#' then
+if channel and channel:sub(1, 1) == '#' then
   from = 'chan'
 else
   from = 'nick'
@@ -70,7 +71,7 @@ local command, raw_params = (function (message)
   end
 end)(message)
 
-function proccess(command, raw_params)
+function process(command, raw_params)
   local params = explode(' ', raw_params)
   
   if from == 'chan' then
@@ -93,9 +94,45 @@ function proccess(command, raw_params)
       end
     elseif command == 'TIP' then
       if empty(raw_params) then
-        irc:sendChat(irc_user.nick, 'usage: TIP <auth token> <nick> [<amount>]')
+        irc:sendChat(irc_user.nick, 'usage: TIP <auth token> <nick> [<#channel>] [<amount>]')
       else
-        local _ = (function(auth_token, nick, channel, amount)
+        local _ = (function(auth_token, nick, arg3, arg4)
+          local amount, channel
+
+          if empty(nick) then
+            process 'TIP'
+            return
+          end
+
+          if is_numeric(arg4) then
+            amount = tonumber(arg4)
+          elseif not empty(arg4) then
+            if arg4:sub(1, 1) == '#' then
+              channel = arg4
+            -- When arg4 exits but isn't numeric
+            else
+              process 'TIP'
+              return
+            end
+          end
+
+          if is_numeric(arg3) then
+            amount = tonumber(arg3)
+          elseif not empty(arg3) then
+            if arg3:sub(1, 1) == '#' then
+              channel = arg3
+            -- When arg3 exists but isn't numeric, nor a channel
+            elseif not amount and not channel then
+              process 'TIP'
+              return
+            end
+            -- When arg4 exists and isn't numeric
+            if not empty(arg4) and channel and not amount then
+              process 'TIP'
+              return
+            end
+          end
+
           amount = amount or 40
           if auth_token == tokens.auth[irc_user.nick] then
             local token = uuid.new()
@@ -104,13 +141,17 @@ function proccess(command, raw_params)
               amount = amount,
               donor = irc_user.nick,
             }
-            irc:sendChat(irc_user.nick, ('Sending %s DVC to %s'):format(amount, nick))
+            if channel then
+              irc:sendChat(channel, ('%s offers a tip of %s DVC to %s'):format(irc_user.nick, amount, nick))
+            else
+              irc:sendChat(irc_user.nick, ('Sending %s DVC to %s'):format(amount, nick))
+            end
             irc:sendChat(nick, ('You got %s DVC from %s. Your claim token is: %s'):format(amount, irc_user.nick, token))
             irc:sendChat(nick, 'usage: CLAIM <claim token> <tip address>')
           else
             irc:sendChat(nick, 'error: Invalid auth token!')
           end
-        end)(params[1], params[2], params[3])
+        end)(params[1], params[2], params[3], params[4])
       end
     elseif command == 'CLAIM' then
       if empty(raw_params) then
@@ -128,8 +169,9 @@ function proccess(command, raw_params)
                 irc:sendChat(claim.nick, "error: Can't deliver tip! please try again later.")
               else
                 tokens.claim[token] = nil
-                irc:sendChat(claim.donor, ('Your tip was delivered to %s. Transaction ID: %s'):format(claim.nick, rs.result))
-                irc:sendChat(claim.nick, ('Sent %s DVC to %s'):format(claim.amount, tip_address))
+                local txid = rs and rs.result or ''
+                irc:sendChat(claim.donor, ('%s DVC delivered to %s. http://darkgamex.ch:2751/tx/%s'):format(claim.amount, claim.nick, txid))
+                irc:sendChat(claim.nick, ('Sent %s DVC to %s. http://darkgamex.ch:2751/tx/%s'):format(claim.amount, tip_address, txid))
               end
             end
           else
@@ -145,7 +187,7 @@ function proccess(command, raw_params)
           if auth_token == tokens.auth[irc_user.nick] then
             if empty(channel) or channel:sub(1, 1) ~= '#' then
               irc:sendChat(irc_user.nick, 'error: Invalid channel!')
-              proccess 'JOIN'
+              process 'JOIN'
             elseif not empty(key) then
               irc:join(channel, key)
             else
@@ -160,6 +202,6 @@ function proccess(command, raw_params)
   end
 end
 
-proccess(command, raw_params)
+process(command, raw_params)
 
 print 'DEBUG: done.'
