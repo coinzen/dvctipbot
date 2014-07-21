@@ -170,8 +170,8 @@ function process(command, raw_params)
               else
                 tokens.claim[token] = nil
                 local txid = rs and rs.result or ''
-                irc:sendChat(claim.donor, ('%s DVC delivered to %s. http://darkgamex.ch:2751/tx/%s'):format(claim.amount, claim.nick, txid))
-                irc:sendChat(claim.nick, ('Sent %s DVC to %s. http://darkgamex.ch:2751/tx/%s'):format(claim.amount, tip_address, txid))
+                irc:sendChat(claim.donor, ('%s DVC delivered to %s. http://d.evco.in/abe/tx//%s'):format(claim.amount, claim.nick, txid))
+                irc:sendChat(claim.nick, ('Sent %s DVC to %s. http://d.evco.in/abe/tx//%s'):format(claim.amount, tip_address, txid))
               end
             end
           else
