@@ -1,6 +1,15 @@
 dvctipbot
 ============
 
+Project abandoned
+-----------------
+
+Due to lack of support from the community the project was abandoned. 
+
+
+What is dvctipbot
+-----------------
+
 An IRC bot that loves to donate devcoins (DVC).
 
 Want some free devcoins? Join **#devcoin** on Freenode.
